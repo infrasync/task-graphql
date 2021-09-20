@@ -10,7 +10,7 @@ const ListPassenger = props => {
                     <td>Jenis Kelamin</td>
                     <td bgcolor="white" className="removeBorder"></td>
                 </thead>
-                {props.data.map(item => (
+                {props.data?.map(item => (
                     <ListItem
                         key={item.id}
                         data={item}
