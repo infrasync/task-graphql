@@ -88,16 +88,16 @@ function Home() {
   const [addPengunjung, { loading: loadingAddPengunjung }] = useMutation(
     ADD_PENGUNJUNG,
     {
-      refetchQueries: queryData,
+      refetchQueries: [queryData],
     }
   );
   const [removePengunjung, { loading: loadingRemovePengunjung }] = useMutation(
     REMOVE_PENGUNJUNG,
-    { refetchQueries: queryData }
+    { refetchQueries: [queryData] }
   );
   const [updatingPengunjung, { loading: loadingUpdatePengunjung }] =
     useMutation(UPDATE_PENGUNJUNG, {
-      refetchQueries: queryData,
+      refetchQueries: [queryData],
     });
   const tambahPengunjung = (data) => {
     //code
@@ -105,7 +105,6 @@ function Home() {
     addPengunjung({
       variables: data,
     });
-    refetchData();
   };
 
   const updatePengunjung = (data) => {
@@ -193,7 +192,7 @@ function Home() {
             <input
               name="gender"
               type="radio"
-              value="pria"
+              value="Pria"
               onChange={handleFilterGender}
             />
             Pria
@@ -202,7 +201,7 @@ function Home() {
             <input
               name="gender"
               type="radio"
-              value="wanita"
+              value="Wanita"
               onChange={handleFilterGender}
             />
             Wanita
