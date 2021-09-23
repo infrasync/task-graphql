@@ -3,6 +3,7 @@ import PassengerInput from "./PassengerInput";
 import ListPassenger from "./ListPassenger";
 import Header from "./Header";
 import { useMutation, useSubscription } from "@apollo/client";
+import toast, { Toaster } from "react-hot-toast";
 
 import "reactjs-popup/dist/index.css";
 import {
@@ -28,6 +29,9 @@ function Home() {
   const tambahPengunjung = (data) => {
     addPengunjung({
       variables: data,
+    }).then((res) => {
+      const { nama } = res.data.insert_anggota.returning[0];
+      toast.success(`Data: ${nama} berhasil ditambahkan`);
     });
   };
 
@@ -37,6 +41,9 @@ function Home() {
         id: data.id,
         _set: data,
       },
+    }).then((res) => {
+      const nama = res.data.update_anggota_by_pk.nama;
+      toast.success(`Data : ${nama} berhasil diupdate`);
     });
   };
 
@@ -45,6 +52,9 @@ function Home() {
       variables: {
         id: item,
       },
+    }).then((res) => {
+      const nama = res.data.delete_anggota_by_pk.nama;
+      toast.success(`Data : ${nama} berhasil dihapus`);
     });
   };
 
@@ -126,6 +136,7 @@ function Home() {
         />
       )}
       <PassengerInput tambahPengunjung={tambahPengunjung} />
+      <Toaster />
     </div>
   );
 }
