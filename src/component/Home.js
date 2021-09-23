@@ -14,6 +14,7 @@ import {
 } from "../graphql/gql";
 
 function Home() {
+  // NOTE: data for filtering
   const dataId = useRef();
   const [filteredData, setFilteredData] = useState(null);
   const [isFiltered, setFiltered] = useState(false);
@@ -21,11 +22,14 @@ function Home() {
     type: "",
     value: null,
   });
-  const { data } = useSubscription(SUBSCRIPTION_PENGUNJUNG);
 
+  // NOTE: GraphQL mutation and subs
+  const { data } = useSubscription(SUBSCRIPTION_PENGUNJUNG);
   const [addPengunjung] = useMutation(ADD_PENGUNJUNG);
   const [removePengunjung] = useMutation(REMOVE_PENGUNJUNG);
   const [updatingPengunjung] = useMutation(UPDATE_PENGUNJUNG);
+
+  // NOTE: method for manipulate data
   const tambahPengunjung = (data) => {
     addPengunjung({
       variables: data,
@@ -58,6 +62,7 @@ function Home() {
     });
   };
 
+  // NOTE: method for filtering data
   function filteringData({ type, value }) {
     const filteredData = data.anggota.filter((item) => {
       return item[type] === value;
