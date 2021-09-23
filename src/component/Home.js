@@ -114,13 +114,13 @@ function Home() {
       <button onClick={() => setFiltered(false)}>View All Data </button>
       {isFiltered ? (
         <ListPassenger
-          data={filteredData}
+          data={filteredData.sort((a, b) => a.id - b.id)}
           hapusPengunjung={hapusPengunjung}
           updatePengunjung={updatePengunjung}
         />
       ) : (
         <ListPassenger
-          data={data?.anggota}
+          data={data?.anggota.sort((a, b) => a.id - b.id)}
           hapusPengunjung={hapusPengunjung}
           updatePengunjung={updatePengunjung}
         />
