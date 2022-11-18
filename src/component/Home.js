@@ -1,185 +1,102 @@
-import { useEffect, useState, useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import PassengerInput from "./PassengerInput";
 import ListPassenger from "./ListPassenger";
 import Header from "./Header";
-import { useQuery, useLazyQuery, gql, useMutation } from "@apollo/client";
-import Popup from "reactjs-popup";
+import { useMutation, useSubscription } from "@apollo/client";
+import toast, { Toaster } from "react-hot-toast";
+
 import "reactjs-popup/dist/index.css";
-
-const ADD_PENGUNJUNG = gql`
-  mutation MyMutation($nama: name!, $umur: Int!, $jenisKelamin: String!) {
-    insert_anggota(
-      objects: { nama: $nama, umur: $umur, jenisKelamin: $jenisKelamin }
-    ) {
-      returning {
-        nama
-        umur
-        jenisKelamin
-      }
-    }
-  }
-`;
-
-const REMOVE_PENGUNJUNG = gql`
-  mutation MyMutation($id: Int!) {
-    delete_anggota_by_pk(id: $id) {
-      id
-      nama
-    }
-  }
-`;
-
-const UPDATE_PENGUNJUNG = gql`
-  mutation MyMutation($id: Int!, $_set: anggota_set_input = {}) {
-    update_anggota_by_pk(pk_columns: { id: $id }, _set: $_set) {
-      nama
-      id
-    }
-  }
-`;
-
-const queryData = gql`
-  query MyQuery {
-    anggota {
-      id
-      nama
-      umur
-      jenisKelamin
-    }
-  }
-`;
-const queryDataById = gql`
-  query MyQuery($_id: Int!) {
-    anggota(where: { id: { _eq: $_id } }) {
-      id
-      nama
-      umur
-      jenisKelamin
-    }
-  }
-`;
-const queryDataByGender = gql`
-  query MyQuery($_jenisKelamin: String!) {
-    anggota(where: { jenisKelamin: { _eq: $_jenisKelamin } }) {
-      id
-      nama
-      umur
-      jenisKelamin
-    }
-  }
-`;
+import {
+  ADD_PENGUNJUNG,
+  UPDATE_PENGUNJUNG,
+  REMOVE_PENGUNJUNG,
+  SUBSCRIPTION_PENGUNJUNG,
+} from "../graphql/gql";
 
 function Home() {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState();
+  // NOTE: data for filtering
   const dataId = useRef();
+  const [filteredData, setFilteredData] = useState(null);
+  const [isFiltered, setFiltered] = useState(false);
+  const [whatFiltered, setWhatFilter] = useState({
+    type: "",
+    value: null,
+  });
 
-  const [
-    getDataResult,
-    { data: dataResult, loading: loadingResult, refetch: refetchData },
-  ] = useLazyQuery(queryData);
-  const [getDataById, { data: dataQueryById, loading: loadingDataId }] =
-    useLazyQuery(queryDataById);
-  const [
-    getDataByGender,
-    { data: dataQueryByGender, loading: loadingDataGender },
-  ] = useLazyQuery(queryDataByGender);
+  // NOTE: GraphQL mutation and subs
+  const { data } = useSubscription(SUBSCRIPTION_PENGUNJUNG);
+  const [addPengunjung] = useMutation(ADD_PENGUNJUNG);
+  const [removePengunjung] = useMutation(REMOVE_PENGUNJUNG);
+  const [updatingPengunjung] = useMutation(UPDATE_PENGUNJUNG);
 
-  const [addPengunjung, { loading: loadingAddPengunjung }] = useMutation(
-    ADD_PENGUNJUNG,
-    {
-      refetchQueries: queryData,
-    }
-  );
-  const [removePengunjung, { loading: loadingRemovePengunjung }] = useMutation(
-    REMOVE_PENGUNJUNG,
-    { refetchQueries: queryData }
-  );
-  const [updatingPengunjung, { loading: loadingUpdatePengunjung }] =
-    useMutation(UPDATE_PENGUNJUNG, {
-      refetchQueries: queryData,
-    });
+  // NOTE: method for manipulate data
   const tambahPengunjung = (data) => {
-    //code
-    console.log("add clicked!");
     addPengunjung({
       variables: data,
+    }).then((res) => {
+      const { nama } = res.data.insert_anggota.returning[0];
+      toast.success(`Data: ${nama} berhasil ditambahkan`);
     });
-    refetchData();
   };
 
   const updatePengunjung = (data) => {
-    console.log("update clicked");
     updatingPengunjung({
       variables: {
         id: data.id,
         _set: data,
       },
+    }).then((res) => {
+      const nama = res.data.update_anggota_by_pk.nama;
+      toast.success(`Data : ${nama} berhasil diupdate`);
     });
   };
 
   const hapusPengunjung = (item) => {
-    // code
-    console.log("remove clicked!");
     removePengunjung({
       variables: {
         id: item,
       },
+    }).then((res) => {
+      const nama = res.data.delete_anggota_by_pk.nama;
+      toast.success(`Data : ${nama} berhasil dihapus`);
     });
   };
+
+  // NOTE: method for filtering data
+  function filteringData({ type, value }) {
+    const filteredData = data.anggota.filter((item) => {
+      return item[type] === value;
+    });
+    return filteredData;
+  }
 
   function handleQueryById() {
     const id = parseInt(dataId.current.value);
+    const typesData = { type: "id", value: id };
     if (id < 1 || isNaN(id)) {
       return alert("nilai id harus lebih dari 1 dan tidak boleh kosong!");
     }
-    setLoading(true);
-    getDataById({
-      variables: {
-        _id: id,
-      },
-    });
-    setData(dataQueryById);
+    setWhatFilter(typesData);
+    const newFiltered = filteringData(typesData);
+    setFilteredData(newFiltered);
+    setFiltered(true);
   }
 
-  const handleGetData = () => {
-    getDataResult();
-    setData(dataResult);
-  };
-
   const handleFilterGender = (e) => {
-    const gender = e.target.value;
-    console.log(e.target.value);
-    setLoading(true);
-    getDataByGender({
-      variables: {
-        _jenisKelamin: gender,
-      },
-    });
-    setData(dataQueryByGender);
+    const typesData = { type: "jenisKelamin", value: e.target.value };
+    setWhatFilter(typesData);
+    const newFiltered = filteringData(typesData);
+    setFilteredData(newFiltered);
+    setFiltered(true);
   };
 
   useEffect(() => {
-    handleGetData();
-    if (dataResult) {
-      setData(dataResult);
-      setLoading(loadingResult);
+    if (isFiltered) {
+      const newFiltered = filteringData(whatFiltered);
+      setFilteredData(newFiltered);
+      setFiltered(true);
     }
-  }, [dataResult]);
-
-  useEffect(() => {
-    if (dataQueryById) {
-      setData(dataQueryById);
-      setLoading(loadingDataId);
-    }
-  }, [dataQueryById]);
-
-  useEffect(() => {
-    if (dataQueryByGender) {
-      setData(dataQueryByGender);
-      setLoading(loadingDataGender);
-    }
-  }, [dataQueryByGender]);
+  }, [data]);
 
   return (
     <div>
@@ -193,7 +110,7 @@ function Home() {
             <input
               name="gender"
               type="radio"
-              value="pria"
+              value="Pria"
               onChange={handleFilterGender}
             />
             Pria
@@ -202,24 +119,29 @@ function Home() {
             <input
               name="gender"
               type="radio"
-              value="wanita"
+              value="Wanita"
               onChange={handleFilterGender}
             />
             Wanita
           </label>
         </div>
       </div>
-      <button onClick={handleGetData}>Refetch data </button>
-      {loading ? (
-        <p>Loading...</p>
+      <button onClick={() => setFiltered(false)}>View All Data </button>
+      {isFiltered ? (
+        <ListPassenger
+          data={filteredData.sort((a, b) => a.id - b.id)}
+          hapusPengunjung={hapusPengunjung}
+          updatePengunjung={updatePengunjung}
+        />
       ) : (
         <ListPassenger
-          data={data?.anggota}
+          data={data?.anggota.sort((a, b) => a.id - b.id)}
           hapusPengunjung={hapusPengunjung}
           updatePengunjung={updatePengunjung}
         />
       )}
       <PassengerInput tambahPengunjung={tambahPengunjung} />
+      <Toaster />
     </div>
   );
 }
